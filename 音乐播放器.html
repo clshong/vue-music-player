@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <title>音乐播放器</title>
+  <style>
+    body,
+    ul,
+    dl,
+    dd {
+      margin: 0px;
+      padding: 0px;
+    }
+
+    .wrap {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: url('images/bg.jpg') no-repeat;
+      background-size: 100% 100%;
+    }
+
+    .play_wrap {
+      width: 800px;
+      height: 544px;
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      margin-left: -400px;
+      margin-top: -272px;
+      /* background-color: #f9f9f9; */
+    }
+
+    .search_bar {
+      height: 60px;
+      background-color: #1eacda;
+      overflow: hidden;
+      border-top-left-radius: 4px;
+      border-top-right-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      z-index: 11;
+    }
+
+    .search_bar img {
+      margin-left: 23px;
+    }
+
+    .search_bar input {
+      margin-right: 23px;
+      width: 296px;
+      height: 34px;
+      border-radius: 17px;
+      border: 0px;
+      background: url('') 265px center no-repeat rgba(255, 255, 255, 0.45);
+      text-indent: 15px;
+      outline: none;
+    }
+
+    .search-icon {
+      position: absolute;
+      right: 35px;
+      cursor: pointer;
+    }
+
+    .center_con {
+      height: 435px;
+      background-color: rgba(255, 255, 255, 0.5);
+      display: flex;
+    }
+
+    .song_wrapper {
+      width: 200px;
+      height: 435px;
+      box-sizing: border-box;
+      padding: 10px;
+      list-style: none;
+      background: url('images/line.png') right center no-repeat;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .song_list li {
+      font-size: 12px;
+      color: #333;
+      line-height: 36px;
+      width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .song_list .active {
+      color: #da651e;
+    }
+
+    .player_con {
+      width: 400px;
+      height: 435px;
+      position: relative;
+    }
+
+    .disc {
+      position: absolute;
+      left: 73px;
+      top: 60px;
+      z-index: 9;
+    }
+
+    .cover {
+      position: absolute;
+      left: 125px;
+      top: 112px;
+      width: 150px;
+      height: 150px;
+      border-radius: 75px;
+      z-index: 8;
+    }
+
+    .comment_list {
+      width: 200px;
+      height: 435px;
+      box-sizing: border-box;
+      padding: 10px;
+      list-style: none;
+      background: url('images/line.png') left center no-repeat;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .comment_list dl {
+      padding-left: 55px;
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .comment_list dt {
+      position: absolute;
+      left: 4px;
+      top: 0px;
+    }
+
+    .comment_list dt img {
+      width: 40px;
+      height: 40px;
+      border-radius: 20px;
+    }
+
+    .comment_list dd {
+      font-size: 12px;
+    }
+
+    .comment_list .name {
+      font-weight: bold;
+      color: #333;
+      margin-top: 5px;
+    }
+    .comment_list .detail {
+      color: #666;
+      margin-top: 5px;
+      line-height: 18px;
+    }
+
+    .audio_con {
+      height: 50px;
+      background-color: #f1f3f4;
+      border-bottom-left-radius: 4px;
+      border-bottom-right-radius: 4px;
+    }
+
+    .myaudio {
+      width: 800px;
+      height: 40px;
+      margin-top: 5px;
+      outline: none;
+      background-color: #f1f3f4;
+    }
+
+    /* 旋转的动画 */
+    @keyframes Rotate {
+      from {
+        transform: rotateZ(0);
+      }
+
+      to {
+        transform: rotateZ(360deg);
+      }
+    }
+
+    /* 旋转的类名 */
+    .autoRotate {
+      animation-name: Rotate;
+      animation-iteration-count: infinite;
+      animation-play-state: paused;
+      animation-timing-function: linear;
+      animation-duration: 5s;
+    }
+
+    /* 是否正在播放 */
+    .playing {
+      animation-play-state: running;
+    }
+
+    .play_bar {
+      position: absolute;
+      left: 200px;
+      top: -10px;
+      z-index: 10;
+      transform: rotate(-25deg);
+      transform-origin: 12px 12px;
+      transition: 1s;
+    }
+
+    /* 播放杆 转回去 */
+    .play_bar.playing {
+      transform: rotate(0);
+    }
+    /* Vue 动画对应的 过渡 css 3 属性 */
+    .list-item {
+        display: inline-block;
+        margin-right: 10px;
+      }
+
+      .list-enter-active,
+      .list-leave-active {
+        transition: all 1s;
+      }
+
+      .list-enter,
+      .list-leave-to {
+        opacity: 0;
+        transform: translateX(30px);
+      }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="play_wrap" id="player">
+      <!-- 顶部歌曲搜索 -->
+      <div class="search_bar">
+        <img src="images/player_title.png" alt="" />
+        <!-- 搜索输入框 -->
+        <input type="text" placeholder="请输入你想听的歌曲" v-model.trim="search" @keyup.Enter="searchMusic" />
+        <!-- 搜索按钮 -->
+        <img src="images/zoom.png" class="search-icon" alt="" @click="searchMusic" />
+      </div>
+      <!-- 中间部分，歌曲播放整个面板 -->
+      <div class="center_con">
+        <!-- 歌曲列表 -->
+        <div class="song_wrapper" ref="mysongwrapper">
+          <!-- <ul class="song_list"> -->
+            <transition-group name="list" tag="ul" class="song_list">
+              <li 
+              v-for="(item, index) in musicList" 
+              :key="'music'+ index" 
+              :style="{ transitionDelay: index*100 + 'ms' }"
+              @dblclick="playMusic(item)">
+              {{item.name}} -{{item.artists[0].name}}
+            </li>
+            </transition-group>
+        </div>
+        <!-- 歌曲播放 -->
+        <div class="player_con">
+          <!-- 播放触杆 -->
+          <img src="images/player_bar.png" class="play_bar"  :class="{ playing: isPlay }" />
+          <!-- 黑胶碟片 -->
+          <img src="images/disc.png" class="disc autoRotate " :class="{ playing: isPlay }" />
+          <!-- 歌曲封面 -->
+          <img :src="picSrc" class="cover autoRotate " :class="{ playing: isPlay }" />
+        </div>
+        <!-- 歌曲评论 -->
+        <div class="comment_list" ref="rightwraper">
+          <div>
+            <dl v-for="(item, index) in commentList" :key="'comment'+ index">
+              <dt><img :src="item.user.avatarUrl" alt="" /></dt>
+              <dd class="name">{{item.user.nickname}}  {{item.timeStr}}</dd>
+              <dd class="detail">{{ item.content}}</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+      <!-- 底部歌曲播放 -->
+      <div class="audio_con">
+        <audio 
+        :src="musicUrl"
+        @play="musicPlay"
+        @pause="musicPause"
+        controls="controls" 
+        autoplay="autoplay" 
+        loop="loop" 
+        class="myaudio"></audio>
+      </div>
+    </div>
+  </div>
+
+  <script src="./lib/vue.js"></script>
+  <script src="./lib/axios.js"></script>
+  <!-- 导包，导入平滑滚动插件 -->
+  <script src="https://unpkg.com/@better-scroll/core@latest/dist/core.min.js"></script>
+  <script>
+    new Vue({
+      el: '.wrap',
+      data() {
+        return {
+          // 搜索歌曲的名字
+          search: '',
+          // 歌曲列表
+          musicList: [],
+          // 当前播放音乐的 url 地址
+          musicUrl: "",
+          // 音乐播放和暂停状态
+          isPlay: false,
+          // 歌曲封面
+          picSrc: "images/cover.png",
+          // 歌曲评论
+          commentList: [],
+          // 平滑滚动实例化对象句柄
+          bscroll: null,
+          // 评论区平滑滚动对象句柄
+          rbscroll: null,
+        }
+      },
+      // 在 mounted 中，我们才能拿到渲染好的 DOM 节点
+      mounted() {
+        // 因为，我们在前面 体验过，bscroll 元素内容发生变化了，必须要 refresh 才能生效
+        this.bscroll = new BScroll(this.$refs.mysongwrapper);
+        this.rbscroll = new BScroll(this.$refs.rightwraper, {
+          // movable: true,
+          // zoom: true,
+          // pullUpLoad: true,
+          scrollbar: true,
+          // 下拉刷新
+          // pullDownRefresh: true,
+        });
+      },
+      watch:{
+        // 如果我们单纯的监听 我们的 musicList 是不够的！为什么？因为，我们配合使用了 过渡动画
+        // 歌曲列表DOM更新完执行
+        musicList() {
+          this.$nextTick(() => {
+            this.bscroll.refresh();
+          });
+        },
+        // 评论列表DOM更新完执行
+        commentList() {
+          this.$nextTick(() => {
+            this.rbscroll.refresh();
+          });
+        },
+      },
+      methods: {
+        async searchMusic() {
+          // 根据搜索歌曲输入，搜索对应的歌曲
+          if (!this.search) {
+            alert('输入不能为空')
+            return
+          }
+          this.musicList = [];
+          // 发出 axios 请求，返回歌曲列表数据
+          let res = await axios.get('https://autumnfish.cn/search?keywords=' + this.search)
+          // 将我们请求的数据渲染到页面上，通过 响应式对象直接就展示了
+          let timer = setTimeout(() =>{
+            this.musicList = res.data.result.songs;
+            clearInterval(timer)
+          },500)
+        },
+        // 双击播放音乐
+        async playMusic(item) {
+          // 获取音乐的 URL，这个地址我们直接使用，可以通过文档来进行查询
+          this.musicUrl =
+            "https://music.163.com/song/media/outer/url?id=" +
+            item.id +
+            ".mp3 ";
+            // 获取歌曲的封面
+            let album = await axios.get("https://autumnfish.cn/album?id=" + item.album.id);
+            this.picSrc = album.data.album.picUrl
+            // 获取评论
+            let comments = await axios.get(
+            "https://autumnfish.cn/comment/hot?type=0&id=" + item.id);
+            this.commentList =comments.data.hotComments
+        },
+          // 音乐播放事件触发
+          musicPlay(){
+            this.isPlay = true
+          },
+          // 音乐暂停事件触发
+          musicPause(){
+            this.isPlay = false
+          }
+
+      },
+    })
+  </script>
+</body>
+
+</html>
